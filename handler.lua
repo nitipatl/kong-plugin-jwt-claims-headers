@@ -1,5 +1,5 @@
 local BasePlugin = require "kong.plugins.base_plugin"
-local responses = require "kong.tools.responses"
+local responses = require "kong.pdk.response"
 local jwt_decoder = require "kong.plugins.jwt.jwt_parser"
 local req_set_header = ngx.req.set_header
 local ngx_re_gmatch = ngx.re.gmatch
@@ -43,18 +43,18 @@ function JwtClaimsHeadersHandler:access(conf)
 
   local token, err = retrieve_token(ngx.req, conf)
   if err and not continue_on_error then
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR(err)
+    return responses.exit(500, "Failed")
   end
 
   if not token and not continue_on_error then
-    return responses.send_HTTP_UNAUTHORIZED()
+    return responses.exit(401, "Forbidden")
   elseif not token and continue_on_error then
     return
   end
 
   local jwt, err = jwt_decoder:new(token)
   if err and not continue_on_error then
-    return responses.send_HTTP_INTERNAL_SERVER_ERROR()
+    return responses.exit(500, "Failed")
   end
 
   local claims = jwt.claims
